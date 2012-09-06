@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<vbox spacing="8">
+ <progressbar text="This is a progressbar" expand="true" fill="true"/>
+ <hbox spacing="8">
+  <vbox>
+    <entry enable="fixed_radio" value="screen.fixed_height"/>
+    <label text="yes"/>
+    <entry visible="false"/>
+    <combo value="tcombo" editable="false">
+      <value>/</value>
+      <value>/boot</value>
+      <value>/home</value>
+    </combo>
+    <spinbutton value="tspin"/>
+  </vbox>
+  <vbox>
+    <optionmenu value="toptmenu">
+      <value valstr="f">False</value>
+      <value valstr="t">True</value>
+      <value valstr="o">OK</value>
+      <value valstr="c">Cancel</value>
+    </optionmenu>
+    <button clicked="test_clicked" tips="click to open">
+      <vbox>
+        <image file="yes.png"/>
+        <label text="MAGIC"/>
+      </vbox>
+    </button>
+  </vbox>
+ </hbox>
+  <hscale value="hscale" digits="2" valuepos="left"
+          lower="1.0" upper="200.0" stepinc="0.5" pagesize="0.0" pageinc="0.0" length="200"/>
+  <hseparator expand="true" />
+  <frame label="FRAME">
+    <table rows="3" columns="3" margin="5" expand="fill">
+      <tr>
+        <td><radiobutton name="radio_name" label="fullscreen" value="fullscreen" toggled="test_toggled" checked="" /></td>
+      </tr>
+      <tr>
+        <td><radiobutton id="percentage_radio" name="radio_name" label="percentage" value="percentage" toggled="test_toggled" /></td>
+        <td><spinbutton enable="percentage_radio" lower="0" upper="100" value="screen.percentage_value" /></td>
+      </tr>
+      <tr>
+      <td><radiobutton id="fixed_radio" name="radio_name" label="fixed" value="fixed" toggled="test_toggled"/></td>
+      <td><entry enable="fixed_radio" value="screen.fixed_height"/></td>
+      <td><entry enable="fixed_radio" value="screen.fixed_width"/></td>
+      </tr>
+    </table>
+  </frame>
+    <frame label="FRAME">
+    <table rows="3" columns="3" margin="5" expand="fill">
+      <tr>
+        <td><checkbutton name="radio_name_1_0" label="fullscreen" value="fullscreen" toggled="test_toggled" checked="" /></td>
+      </tr>
+      <tr>
+        <td><checkbutton id="percentage_radio_1" name="radio_name_1_1" label="percentage" value="percentage" toggled="test_toggled" /></td>
+        <td><spinbutton enable="percentage_radio_1" lower="0" upper="100" value="screen.percentage_value" /></td>
+        <td><entry enable="percentage_radio_1" value="screen.fixed_width"/></td>
+      </tr>
+      <tr>
+        <td><checkbutton id="fixed_radio_1" name="radio_name_1_2" label="fixed" value="fixed" toggled="test_toggled"/></td>
+        <td><entry enable="fixed_radio_1" value="screen.fixed_height"/></td>
+        <td><entry enable="fixed_radio_1" value="screen.fixed_width"/></td>
+      </tr>
+    </table>
+  </frame>
+ <text filename="../../../COPYING" hpolicy="always" expand="true" fill="true"/>
+</vbox>
