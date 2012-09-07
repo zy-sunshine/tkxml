@@ -5,7 +5,15 @@ from gettext import gettext as _
 from Tkinter import *
 #from ttk import *
 from ttk import Separator, Labelframe
-import Image, ImageTk
+#from Tkinter import Scale, Button
+import os
+try:
+    import Image, ImageTk
+except ImportError, e:
+    print 'ImportError %s' % e
+    USE_IMAGE = FALSE
+else:
+    USE_IMAGE = TRUE
 import pdb
 
 class Log():
@@ -85,7 +93,11 @@ class TkXml(object):
 
         connected_widget = []
         def connect_btn(widget, func, data):
-            widget.bind("<ButtonRelease-1>", lambda event: self.enable_toggle(data))
+            if os.name == 'nt':
+                # on windows platform have bugs on bind method (variable do not change before event, so get variable value is incorrect)
+                widget.config(command=lambda : func(data))
+            else:
+                widget.bind("<ButtonRelease-1>", lambda event: func(data))
             
         for id_ in self.enable_map.keys():
             w = self.id_map[id_]
@@ -106,12 +118,12 @@ class TkXml(object):
         value = self.name_value_map[name]
         
         for widget in self.name_map[name]:
-            if widget.widgetName == 'radiobutton':
+            if widget.widgetName == 'radiobutton' or widget.widgetName == 'ttk::radiobutton':
                 if value.get() == widget.cget('value'):
                     state = NORMAL;
                 else:
                     state = DISABLED
-            elif widget.widgetName == 'checkbutton':
+            elif widget.widgetName == 'checkbutton' or widget.widgetName == 'ttk::checkbutton':
                 if value.get():
                     state = NORMAL
                 else:
@@ -222,42 +234,57 @@ class TkXml(object):
     
     def xgc_button(self, parent, node):
         label = __(node.getAttribute('label'))
+        v = StringVar()
+        widget = Button(parent, text=label, textvariable=v)
+        widget.ext_var = v
         if label:
-            widget = Button(parent, text=label)
+            v.set(label)
         else:
-            widget = Button(parent)
+            pass
+#            widget = Button(parent)
         self._xgc_connect(widget, node, 'clicked')
-        
-        for subnode in self.uixmldoc.getElementsByTagName('image'):
-            if subnode and subnode.nodeType == subnode.ELEMENT_NODE:
-                imgfile = self._xgc_attr(subnode, 'file', '')
-                if imgfile:
-                    bitmap = ImageTk.PhotoImage(Image.open(imgfile))
-                    widget.config(image=bitmap, compound=CENTER)
-                    widget.image = bitmap
-            break # only first
+        if USE_IMAGE:
+            for subnode in node.getElementsByTagName('image'):
+                if subnode and subnode.nodeType == subnode.ELEMENT_NODE:
+                    imgfile = self._xgc_attr(subnode, 'file', '')
+                    if imgfile:
+                        bitmap = ImageTk.PhotoImage(Image.open(imgfile)) #@UndefinedVariable
+                        widget.config(image=bitmap, compound=CENTER)
+                        widget.image = bitmap
+                break # only first
                 
-        for subnode in self.uixmldoc.getElementsByTagName('label'):
+        for subnode in node.getElementsByTagName('label'):
             if subnode and subnode.nodeType == subnode.ELEMENT_NODE:
                 text = self._xgc_attr(subnode, 'text', '')
                 if text:
                     widget.config(text=text, compound=CENTER)
             break # only first
-            
+        width = self._xgc_attr(node, 'width', '')
+        if width:
+            widget.config(width=int(width))
+        height = self._xgc_attr(node, 'height', '')
+        if height:
+            widget.config(height=int(height))
+        
         return widget
     
     def xgc_image(self, parent, node):
-        imgfile = self._xgc_attr(node, 'file', '')
-        #bitmap = BitmapImage(file=imgfile)
-        bitmap = ImageTk.PhotoImage(Image.open(imgfile))
-        label = Label(parent, image=bitmap)
-        label.image = bitmap # keep a reference!
-        #label.pack()
-        return label
+        if USE_IMAGE:
+            imgfile = self._xgc_attr(node, 'file', '')
+            #bitmap = BitmapImage(file=imgfile)
+            bitmap = ImageTk.PhotoImage(Image.open(imgfile)) #@UndefinedVariable
+            label = Label(parent, image=bitmap)
+            label.image = bitmap # keep a reference!
+            #label.pack()
+            return label
+        else:
+            return None
     
     def xgc_entry(self, parent, node):
 #        max = int(self._xgc_attr(node, 'max', 0))
-        widget = Entry(parent)
+        v = StringVar()
+        widget = Entry(parent, textvariable=v)
+        widget.ext_var = v
 #        visible = node.getAttribute('visible')
 #        if visible == 'false':
 #            widget.set_visibility(False)
@@ -384,14 +411,15 @@ class TkXml(object):
             padx = int(self._xgc_attr(subnode, 'padx', 0))
             pady = int(self._xgc_attr(subnode, 'pady', 0))
 
-            child.grid(row=cur_row, column=cur_col, padx=padx, pady=pady, sticky=N+W)
+            rowspan = int(self._xgc_attr(subnode, 'rowspan', '1'))
+            columnspan = int(self._xgc_attr(subnode, 'colspan', '1'))
+            expand = self._xgc_attr(subnode, 'expand', '')
+            if expand == 'fill':
+                sticky = N+W+S+E
+            else:
+                sticky = N+W
+            child.grid(row=cur_row, column=cur_col, padx=padx, pady=pady, sticky=sticky, rowspan=rowspan, columnspan=columnspan)
             
-            rowspan = int(self._xgc_attr(subnode, 'rowspan', '0'))
-            columnspan = int(self._xgc_attr(subnode, 'colspan', '0'))
-            if rowspan:
-                child.config(rowspan=rowspan)
-            if columnspan:
-                child.config(columnspan=columnspan)
             return cur_col
         
         for trnode in node.childNodes:
@@ -448,10 +476,12 @@ class TkXml(object):
         if name:
             if self.name_value_map.has_key(name):
                 widget = Checkbutton(parent, text=label, variable=self.name_value_map[name], onvalue = 1, offvalue = 0)
+                widget.ext_var = self.name_value_map[name]
             else:
                 v = IntVar()
                 widget = Checkbutton(parent, text=label, variable=v, onvalue = 1, offvalue = 0)
                 self.name_value_map[name] = v
+                widget.ext_var = v
         else:
             raise Exception('check button should have name attr for group')
 
@@ -616,7 +646,17 @@ class TkXml(object):
         for widget in self.range_map.keys():
             value = self.get_data(data_xml, self.range_map[widget])
             widget.set(float(value))
-
+            
+    def get_variable_by_widget(self, widget):
+        id_, name = self.widget_info_map[widget]
+        return self.name_value_map[name]
+    def get_variable_by_id(self, id_):
+        widget = self.id_map[id]
+        return self.get_variable_by_widget(widget)
+        
+    def get_variable_by_name(self, name):
+        return self.name_value_map[name]
+    
 class TestTkXml(TkXml):
     def __init__(self, master, uixmlfile):
         TkXml.__init__(self, master, uixmlfile)
